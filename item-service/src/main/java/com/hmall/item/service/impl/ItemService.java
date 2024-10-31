@@ -20,10 +20,9 @@ public class ItemService extends ServiceImpl<ItemMapper, Item> implements IItemS
     public void updateStatus(Long id, Integer status) {
         // update tb_item set status = ? where id = ?
         this.update().set("status", status).eq("id", id).update();
-
-        // 根据上下架判断RoutingKey
+        // set routing key based on status
         String routingKey = status == 1 ? "item.up" : "item.down";
-        // 发送消息
+        // send message to rabbitmq
         rabbitTemplate.convertAndSend("item.topic", routingKey, id);
     }
 
@@ -34,7 +33,7 @@ public class ItemService extends ServiceImpl<ItemMapper, Item> implements IItemS
             // update tb_item set stock = stock - #{num} where id = #{itemId}
             update().setSql("stock = stock - " + num).eq("id", itemId).update();
         } catch (Exception e) {
-            throw new RuntimeException("库存不足！");
+            throw new RuntimeException("Out of stock!");
         }
     }
 
